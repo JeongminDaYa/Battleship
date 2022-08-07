@@ -1,0 +1,433 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>Battleship</title>
+        <style>
+            #userTable, #computerTable{
+                position: absolute;
+                top: 10vw;
+                width: 25vw;
+                height: 25vw;
+                border: black 0.25vw solid;
+                border-collapse: collapse;
+            }
+            #userTable{
+                left: 2vw;
+            }
+            #computerTable{
+                left: 30vw;
+            }
+            td{
+                border: solid black;
+                width: 30px;
+            }
+            h1{
+                position: absolute;
+                top: -1.5vh;
+                left: 4vw;
+                font-size: 50pt;
+                color: maroon;
+            }
+            img{
+                height: 28px;
+            }
+            .shipImg{
+                position: absolute;
+                top: 70vh;
+            }
+            #lengthFive{
+                left: 0.1vw;
+            }
+            #lengthFour{
+                left: 12vw;
+            }
+            #lengthThreeOne{
+                left: 21vw;
+            }
+            #lengthThreeTwo{
+                left: 28vw;
+            }
+            #lengthTwo{
+                left: 35.25vw;
+            }
+        </style>
+        <script src = "drag manager.js"></script>
+        <script>
+            function initialize(){
+				dragNodes = document.getElementsByTagName("img");
+				for (var i=0; i<dragNodes.length; i++){
+                    makeDragNode(dragNodes[i]);
+                    dragNodes[i].style.top = "400px";
+                }
+                dragNodes[0].style.left = "0.5px";
+                dragNodes[1].style.left = "100px";
+                dragNodes[2].style.left = "190px";
+                dragNodes[3].style.left = "260px";
+                dragNodes[4].style.left = "350px";
+                dragNodes[0].shipType = "5";
+                dragNodes[1].shipType = "4";
+                dragNodes[2].shipType = "3.1";
+                dragNodes[3].shipType = "3.2";
+                dragNodes[4].shipType = "2";
+                userBox = document.getElementsByClassName('userBox');
+                userTdArray = [];
+                for(var i=0; i<userBox.length; i++){
+                    temp = {};
+                    temp.userTd = userBox[i];
+                    temp.topY = userBox[i].getBoundingClientRect().top;
+                    temp.leftX = userBox[i].getBoundingClientRect().left;
+                    temp.checkShip = false;
+                    temp.checkAttacked = false;
+                    userTdArray.push(temp);
+                }
+                shipObjects = [new Ship (-1, -1, 5, "h", dragNodes[0]), new Ship (-1, -1, 4, "h", dragNodes[1]), new Ship (-1, -1, 3.1, "h", dragNodes[2]), new Ship (-1, -1, 3.2, "h", dragNodes[3]), new Ship (-1, -1, 2, "h", dragNodes[4])];
+			}
+            function Ship (x, y, size, orient, shipHtml){
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.orientation = orient;
+                this.shipHtml = shipHtml;
+                shipHtml.addEventListener("click", function(){
+                    updateShipPosition(this);
+                })
+            }
+            function updateShipPosition (ship){
+                console.log(ship);
+                if(ship.size == 5){
+                    ship.x = shipFiveX;
+                    ship.y = shipFiveY;
+                }
+                if(ship.size == 4){
+                    ship.x = shipFourX;
+                    ship.y = shipFourY;
+                }
+                if(ship.size == 3.1){
+                    ship.x = shipThreeOneX;
+                    ship.y = shipThreeOneY;
+                }
+                if(ship.size == 3.2){
+                    ship.x = shipThreeTwoX;
+                    ship.y = shipThreeTwoY;
+                }
+                if(ship.size == 2){
+                    ship.x = shipTwoX;
+                    ship.y = shipTwoY;
+                }
+                checkSlot(ship);
+            }
+            function checkSlot(ship){
+                closest = Number.MAX_VALUE;
+                for(var i=0; i<userBox.length; i++){
+                    if(((userTdArray[i].topY - ship.y)**2 + (userTdArray[i].leftX - ship.x)**2) < closest){
+                        closest = (userTdArray[i].topY - ship.y)**2 + (userTdArray[i].leftX - ship.x)**2;
+                        ship.closestSlot = userTdArray[i];
+                    }
+                }
+                fillSlot(ship);
+            }
+            function fillSlot(ship){
+                ship.closestSlot.checkShip = true;
+                // how to find the next slots that are filled. *HW*
+            }
+        </script>
+    </head>
+    <body onload = "initialize();" onmouseup = "checkSlot();">
+        <h1>Setup</h1>
+        <table id = "userTable">
+            <tr>
+                <td></td>
+                <td>A</td>
+                <td>B</td>
+                <td>C</td>
+                <td>D</td>
+                <td>E</td>
+                <td>F</td>
+                <td>G</td>
+                <td>H</td>
+                <td>I</td>
+                <td>J</td>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+                <td class = "userBox"></td>
+            </tr>
+        </table>
+        <table id = "computerTable">
+            <tr>
+                <td></td>
+                <td>A</td>
+                <td>B</td>
+                <td>C</td>
+                <td>D</td>
+                <td>E</td>
+                <td>F</td>
+                <td>G</td>
+                <td>H</td>
+                <td>I</td>
+                <td>J</td>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        </table> <br />
+        <img id = "lengthFive" class = "shipImg" src = "lengthFive.png"/>
+        <img id = "lengthFour" class = "shipImg" src = "lengthFour.png"/>
+        <img id = "lengthThreeOne" class = "shipImg" src = "lengthThree.png"/>
+        <img id = "lengthThreeTwo" class = "shipImg" src = "lengthThree.png"/>
+        <img id = "lengthTwo" class = "shipImg" src = "lengthTwo.png"/>
+    </body>
+</html>
