@@ -1,0 +1,834 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Battleship</title>
+    <style>
+        #userTable,
+        #computerTable {
+            position: absolute;
+            top: 10vw;
+            width: 25vw;
+            height: 25vw;
+            border: black 0.25vw solid;
+            border-collapse: collapse;
+        }
+
+        #userTable {
+            left: 2vw;
+        }
+
+        #computerTable {
+            left: 30vw;
+        }
+
+        td {
+            border: solid black;
+            width: 30px;
+        }
+
+        h1 {
+            position: absolute;
+            top: -1.5vh;
+            left: 4vw;
+            font-size: 50pt;
+            color: maroon;
+        }
+
+        img {
+            height: 28px;
+        }
+
+        .shipImg {
+            position: absolute;
+            top: 80vh;
+            opacity: 0.75;
+        }
+
+        #submitSetup {
+            visibility: hidden;
+            position: absolute;
+            width: 5vw;
+            height: 3vw;
+            border-radius: 0.5vw;
+            font-size: 1.5vw;
+            top: 40vw;
+            left: 2vw;
+        }
+
+        #sinkLogDiv {
+            position: absolute;
+            visibility: hidden;
+            top: 10vw;
+            left: 60vw;
+        }
+    </style>
+    <script src="drag manager.js"></script>
+    <script>
+        function initialize() {
+            dragNodes = document.getElementsByTagName("img");
+            submitButton = document.getElementById("submitSetup");
+            sinkLog = document.getElementsByClassName("sinkLog");
+            text = document.getElementById("titleText");
+            userAttackedNum = 0;
+            for (var i = 0; i < dragNodes.length; i++) {
+                makeDragNode(dragNodes[i]);
+                dragNodes[i].style.top = "500px";
+            }
+            dragNodes[0].style.left = "10px";
+            dragNodes[1].style.left = "160px";
+            dragNodes[2].style.left = "280px";
+            dragNodes[3].style.left = "375px";
+            dragNodes[4].style.left = "470px";
+            dragNodes[0].shipType = "5";
+            dragNodes[1].shipType = "4";
+            dragNodes[2].shipType = "3.1";
+            dragNodes[3].shipType = "3.2";
+            dragNodes[4].shipType = "2";
+            userBox = document.getElementsByClassName('userBox');
+            compBox = document.getElementsByClassName('compBox');
+            userTdArray = [];
+            compTdArray = [];
+            gameStart = false;
+            for (var i = 0; i < userBox.length; i++) {
+                temp = {};
+                temp.userTd = userBox[i];
+                temp.topY = userBox[i].getBoundingClientRect().top;
+                temp.leftX = userBox[i].getBoundingClientRect().left;
+                temp.checkShip = false;
+                temp.checkAttacked = false;
+                temp.leftGrid = null;
+                temp.rightGrid = null;
+                if (userTdArray.length % 10 != 0) {
+                    temp.leftGrid = userTdArray[userTdArray.length - 1];
+                    temp.leftGrid.rightGrid = temp;
+                }
+                temp.topGrid = null;
+                temp.bottomGrid = null;
+                if (userTdArray.length >= 10) {
+                    temp.topGrid = userTdArray[userTdArray.length - 10];
+                    temp.topGrid.bottomGrid = temp;
+                }
+                userTdArray.push(temp);
+            }
+            for (var g = 0; g < compBox.length; g++) {
+                tempc = {};
+                tempc.compTd = compBox[g];
+                tempc.checkShip = false;
+                tempc.checkAttacked = false;
+                tempc.leftGrid = null;
+                tempc.rightGrid = null;
+                tempc.sink = null;
+                if (compTdArray.length % 10 != 0) {
+                    tempc.leftGrid = compTdArray[compTdArray.length - 1];
+                    tempc.leftGrid.rightGrid = tempc;
+                }
+                tempc.topGrid = null;
+                tempc.bottomGrid = null;
+                if (compTdArray.length >= 10) {
+                    tempc.topGrid = compTdArray[compTdArray.length - 10];
+                    tempc.topGrid.bottomGrid = tempc;
+                }
+                compTdArray.push(tempc);
+            }
+            shipObjects = [new Ship(-1, -1, 5, "h", dragNodes[0], 10), new Ship(-1, -1, 4, "h", dragNodes[1], 160), new Ship(-1, -1, 3.1, "h", dragNodes[2], 280), new Ship(-1, -1, 3.2, "h", dragNodes[3], 375), new Ship(-1, -1, 2, "h", dragNodes[4], 470)];
+            for (var i = 2; i < (shipObjects.length + 1); i++) {
+                randomComputerShip(i);
+                if (i == 3) {
+                    randomComputerShip(i, "second");
+                }
+            }
+        }
+        function Ship(x, y, size, orient, shipHtml, origX) {
+            this.x = x;
+            this.y = y;
+            this.size = size;
+            this.orientation = orient;
+            this.shipHtml = shipHtml;
+            this.originalX = origX;
+            var shipObject = this;
+            shipHtml.shipObject = this;
+            shipHtml.addEventListener("click", function () {
+                updateShipPosition(shipObject);
+            })
+        }
+        function randomComputerShip(shipLength, twoShips) {
+            var array = ["h", "v"];
+            var randomNum = Math.floor(Math.random() * 100);
+            var randomOrientation = array[Math.floor(Math.random() * 2)];
+            while (!(((randomNum % 10 <= (10 - shipLength)) && (randomOrientation == "h")) || ((Math.floor(randomNum / 10) <= (10 - shipLength)) && (randomOrientation == "v")) || ((compTdArray[randomNum].checkship = false) && (compCheckOtherSlots(randomNum, randomOrientation, shipLength))))) {
+                randomNum = Math.floor(Math.random() * 100);
+                randomOrientation = array[Math.floor(Math.random() * 2)];
+            }
+            console.log(randomNum, randomOrientation, shipLength);
+            fillCompSlots(randomNum, randomOrientation, shipLength, twoShips);
+            console.log(compTdArray[randomNum]);
+            console.log(compTdArray);
+        }
+        function updateShipPosition(ship) {
+            console.log(shipObjects);
+            if (ship.size == 5) {
+                ship.x = shipFiveX;
+                ship.y = shipFiveY;
+            }
+            if (ship.size == 4) {
+                ship.x = shipFourX;
+                ship.y = shipFourY;
+            }
+            if (ship.size == 3.1) {
+                ship.x = shipThreeOneX;
+                ship.y = shipThreeOneY;
+            }
+            if (ship.size == 3.2) {
+                ship.x = shipThreeTwoX;
+                ship.y = shipThreeTwoY;
+            }
+            if (ship.size == 2) {
+                ship.x = shipTwoX;
+                ship.y = shipTwoY;
+            }
+            checkSlot(ship);
+        }
+        function checkSlot(ship) {
+            closest = Number.MAX_VALUE;
+            console.log(ship);
+            for (var i = 0; i < userBox.length; i++) {
+                if (((userTdArray[i].topY - ship.y) ** 2 + (userTdArray[i].leftX - ship.x) ** 2) < closest) {
+                    closest = (userTdArray[i].topY - ship.y) ** 2 + (userTdArray[i].leftX - ship.x) ** 2;
+                    ship.closestSlot = userTdArray[i];
+                }
+            }
+            fillSlot(ship);
+        }
+        function fillSlot(ship) {
+            console.log(ship.closestSlot.checkShip)
+            if (ship.closestSlot.checkShip == false) {
+                closestTd = ship.closestSlot;
+                ship.closestSlot.checkShip = true;
+                console.log(ship.closestSlot);
+                ship.x = ship.closestSlot.leftX;
+                ship.y = ship.closestSlot.topY;
+                console.log(ship.x);
+                console.log(ship.closestSlot.leftX);
+                console.log(ship)
+                ship.shipHtml.style.left = ship.x + "px";
+                ship.shipHtml.style.top = ship.y + "px";
+                makeSlotFalse();
+                console.log(userTdArray);
+            }
+            else {
+                ship.shipHtml.style.left = ship.originalX + "px";
+                ship.shipHtml.style.top = "450px";
+                ship.x = ship.originalX;
+                ship.y = 450;
+            }
+        }
+        function changeOrientation(hi, imgLength) {
+            var temp = document.getElementById(hi);
+            if (temp.shipObject.orientation == "h") {
+                temp.src = imgLength + " copy.png";
+                temp.style.width = "28px";
+                temp.style.height = "auto";
+                temp.shipObject.orientation = "v";
+            }
+            else {
+                temp.src = imgLength + ".png";
+                temp.style.width = "auto";
+                temp.style.height = "28px";
+                temp.shipObject.orientation = "h";
+            }
+            updateShipPosition(temp.shipObject);
+        }
+        function compCheckOtherSlots(random, orient, length) {
+            if (orient == "h") {
+                for (var i = 0; i < length; i++) {
+                    if (compTdArray[random + i].checkShip) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else {
+                for (var i = 0; i < length * 10; i += 10) {
+                    if (compTdArray[random + i].checkShip) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        function fillCompSlots(random, orient, length, lengthThreeShip) {
+            if (orient == "h") {
+                for (var i = 0; i < length; i++) {
+                    compTdArray[random + i].checkShip = true;
+                    if (length == 2) {
+                        compTdArray[random + i].sink = "patrol-ship";
+                    }
+                    if ((length == 3) && (lengthThreeShip == null)) {
+                        compTdArray[random + i].sink = "submarine";
+                    }
+                    if ((length == 3) && (lengthThreeShip == "second")) {
+                        compTdArray[random + i].sink = "destroyer";
+                    }
+                    if (length == 4) {
+                        compTdArray[random + i].sink = "battleShip";
+                    }
+                    if (length == 5) {
+                        compTdArray[random + i].sink = "carrier";
+                    }
+                }
+            }
+            else {
+                for (var i = 0; i < length * 10; i += 10) {
+                    console.log(random + i);
+                    console.log(compTdArray[random + i]);
+                    compTdArray[random + i].checkShip = true;
+                    if (length == 2) {
+                        compTdArray[random + i].sink = "patrol-ship";
+                    }
+                    if ((length == 3) && (lengthThreeShip == null)) {
+                        compTdArray[random + i].sink = "submarine";
+                    }
+                    if ((length == 3) && (lengthThreeShip == "second")) {
+                        compTdArray[random + i].sink = "destroyer";
+                    }
+                    if (length == 4) {
+                        compTdArray[random + i].sink = "battleShip";
+                    }
+                    if (length == 5) {
+                        compTdArray[random + i].sink = "carrier";
+                    }
+                }
+            }
+        }
+        function fillOtherSlots(ship) {
+            if (ship.orientation == "h") {
+                var tempShip = ship.closestSlot;
+                for (var i = 0; i < (Math.floor(ship.size - 1)); i++) {
+                    if (!tempShip.rightGrid) {
+                        //if not existing
+                        ship.closestSlot = ship.closestSlot.leftGrid;
+                        fillOtherSlots(ship);
+                        break;
+                    }
+                    if (!tempShip.rightGrid.checkShip) {
+                        tempShip.rightGrid.checkShip = true;
+                        tempShip = tempShip.rightGrid;
+                        ship.shipHtml.style.left = ship.closestSlot.leftX + "px";
+                    }
+                    else {
+                        ship.shipHtml.style.left = ship.originalX + "px";
+                        ship.shipHtml.style.top = "450px";
+                        ship.x = ship.originalX;
+                        ship.y = 450;
+                    }
+                }
+            }
+            if (ship.orientation == "v") {
+                var tempShip = ship.closestSlot;
+                for (var i = 0; i < Math.floor(ship.size - 1); i++) {
+                    if (!tempShip.bottomGrid) {
+                        //if not existing
+                        ship.closestSlot = ship.closestSlot.topGrid;
+                        fillOtherSlots(ship);
+                        break;
+                    }
+                    //stuff HW here
+                    tempShip.bottomGrid.checkShip = true;
+                    tempShip = tempShip.bottomGrid;
+                }
+                ship.shipHtml.style.top = ship.closestSlot.topY + "px";
+            }
+            if (checkSetupDone()) {
+                submitButton.style.visibility = "visible";
+                text.innerHTML = "PLAY";
+                text.style.color = "green";
+                for (var i = 0; i < sinkLog.length; i++) {
+                    sinkLog[i].style.visibility = "visible";
+                }
+            }
+            else {
+                submitButton.style.visibility = "hidden";
+            }
+        }
+        function makeSlotFalse() {
+            for (var j = 0; j < userTdArray.length; j++) {
+                if (!((shipObjects[0].x == userTdArray[j].leftX) && (shipObjects[0].y == userTdArray[j].topY)) && !((shipObjects[1].x == userTdArray[j].leftX) && (shipObjects[1].y == userTdArray[j].topY)) && !((shipObjects[2].x == userTdArray[j].leftX) && (shipObjects[2].y == userTdArray[j].topY)) && !((shipObjects[3].x == userTdArray[j].leftX) && (shipObjects[3].y == userTdArray[j].topY)) && !((shipObjects[4].x == userTdArray[j].leftX) && (shipObjects[4].y == userTdArray[j].topY)) && (userTdArray[j].checkShip)) {
+                    userTdArray[j].checkShip = false;
+                }
+            }
+            for (var i = 0; i < shipObjects.length; i++) {
+                if (shipObjects[i].closestSlot) {
+                    console.log(shipObjects[i]);
+                    fillOtherSlots(shipObjects[i]);
+                }
+            }
+        }
+        function checkSetupDone() {
+            var num = 0;
+            for (var i = 0; i < 100; i++) {
+                if (userTdArray[i].checkShip) {
+                    num++;
+                }
+            }
+            console.log(num);
+            return num == 17;
+        }
+        function startGame() {
+            gameStart = true;
+            submitButton.style.visibility = "hidden";
+            text.innerHTML = "Your turn";
+            text.style.color = "lightblue";
+        }
+        function attackComputer(td) {
+            if ((gameStart) && (text.innerHTML == "Your turn")) {
+                if (compTdArray[td].checkShip) {
+                    compBox[td].style.backgroundColor = "red";
+                    compTdArray[td].sink = null;
+                }
+                else {
+                    compBox[td].style.backgroundColor = "gray";
+                }
+                text.innerHTML = "Computer Turn";
+                text.style.color = "brown";
+                lookForSinked();
+                console.log(compTdArray);
+                if (checkWin("user") && (checkWin("user") != "nothing")) {
+                    text.innerHTML = "Win";
+                    text.style.color = "green";
+                }
+                else {
+                    if (!(checkWin("user"))) {
+                        text.innerHTML = "Lose"
+                        text.style.color = "maroon";
+                    }
+                    if (checkWin("user") == "nothing") {
+                        setTimeout(() => {attackUser()}, 1000);
+                    }
+                }
+            }
+        }
+        function lookForSinked() {
+            var numPatrol = 0;
+            var numSubmarine = 0;
+            var numDestroyer = 0;
+            var numBattleShip = 0;
+            var numCarrier = 0;
+            for (var i = 0; i < compTdArray.length; i++) {
+                if (compTdArray[i].sink == "patrol-ship") {
+                    numPatrol++;
+                    console.log("patrol", i);
+                }
+                if (compTdArray[i].sink == "submarine") {
+                    numSubmarine++;
+                    console.log("patrol2", i);
+                }
+                if (compTdArray[i].sink == "destroyer") {
+                    numDestroyer++;
+                    console.log("patrol3", i);
+                }
+                if (compTdArray[i].sink == "battleShip") {
+                    numBattleShip++;
+                    console.log("patrol4", i);
+                }
+                if (compTdArray[i].sink == "carrier") {
+                    numCarrier++;
+                    console.log("patrol5", i);
+                }
+            }
+            console.log(numPatrol, numSubmarine, numDestroyer, numBattleShip, numCarrier);
+            if (numPatrol == 0) {
+                sinkLog[4].innerHTML = "Computer Patrol Boat (2 blocks): Sunk";
+            }
+            if (numSubmarine == 0) {
+                sinkLog[2].innerHTML = "Computer Submarine (3 blocks): Sunk";
+            }
+            if (numDestroyer == 0) {
+                sinkLog[3].innerHTML = "Computer Destroyer (3 blocks): Sunk";
+            }
+            if (numBattleShip == 0) {
+                sinkLog[1].innerHTML = "Computer Battleship (4 blocks): Sunk";
+            }
+            if (numCarrier == 0) {
+                sinkLog[0].innerHTML = "Computer Carrier (5 blocks): Sunk";
+            }
+        }
+        function attackUser() {
+            var randomNumber = Math.round((Math.random() * 100));
+            console.log(randomNumber);
+            if (!(userTdArray[randomNumber].checkAttacked)) {
+                userTdArray[randomNumber].checkAttacked = true;
+                if (userTdArray[randomNumber].checkShip) {
+                    userTdArray[randomNumber].userTd.style.backgroundColor = "red";
+                    userAttackedNum ++;
+                }
+                else {
+                    userTdArray[randomNumber].userTd.style.backgroundColor = "black";
+                }
+            }
+            else {
+                attackUser();
+            }
+            if (checkWin("comp") && (checkWin("comp") != "nothing")) {
+                text.innerHTML = "Win";
+                text.style.color = "green";
+            }
+            else {
+                if (!(checkWin("comp"))) {
+                    text.innerHTML = "Lose"
+                    text.style.color = "maroon";
+                }
+                if (checkWin("comp") == "nothing") {
+                    setTimeout(() => {text.innerHTML = "Your turn"; text.style.color = "lightblue"}, 1000);
+                }
+            }
+        }
+        function checkWin(para) {
+            if (para == "user") {
+                var count = 0;
+                if (sinkLog[0].innerHTML == "Computer Carrier (5 blocks): Sunk") {
+                    count ++;
+                }
+                if (sinkLog[1].innerHTML == "Computer Battleship (4 blocks): Sunk") {
+                    count ++;
+                }
+                if (sinkLog[2].innerHTML == "Computer Submarine (3 blocks): Sunk") {
+                    count ++;
+                }
+                if (sinkLog[3].innerHTML == "Computer Destroyer (3 blocks): Sunk") {
+                    count ++;
+                }
+                if (sinkLog[4].innerHTML == "Computer Patrol Boat (2 blocks): Sunk") {
+                    count ++;
+                }
+                if (count == 5) {
+                    return true;
+                }
+                else {
+                    return "nothing";
+                }
+            }
+            else {
+                if (userAttackedNum == 17) {
+                    return false;
+                }
+                else {
+                    return "nothing";
+                }
+            }
+        }
+    </script>
+</head>
+
+<body onload="initialize();">
+    <h1 id="titleText">Setup</h1>
+    <table id="userTable">
+        <tr>
+            <td></td>
+            <td>A</td>
+            <td>B</td>
+            <td>C</td>
+            <td>D</td>
+            <td>E</td>
+            <td>F</td>
+            <td>G</td>
+            <td>H</td>
+            <td>I</td>
+            <td>J</td>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>9</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+            <td class="userBox"></td>
+        </tr>
+    </table>
+    <table id="computerTable">
+        <tr>
+            <td></td>
+            <td>A</td>
+            <td>B</td>
+            <td>C</td>
+            <td>D</td>
+            <td>E</td>
+            <td>F</td>
+            <td>G</td>
+            <td>H</td>
+            <td>I</td>
+            <td>J</td>
+        </tr>
+        <tr>
+            <td>1</td>
+            <td onclick="attackComputer(0);" class="compBox"></td>
+            <td onclick="attackComputer(1);" class="compBox"></td>
+            <td onclick="attackComputer(2);" class="compBox"></td>
+            <td onclick="attackComputer(3);" class="compBox"></td>
+            <td onclick="attackComputer(4);" class="compBox"></td>
+            <td onclick="attackComputer(5);" class="compBox"></td>
+            <td onclick="attackComputer(6);" class="compBox"></td>
+            <td onclick="attackComputer(7);" class="compBox"></td>
+            <td onclick="attackComputer(8);" class="compBox"></td>
+            <td onclick="attackComputer(9);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>2</td>
+            <td onclick="attackComputer(10);" class="compBox"></td>
+            <td onclick="attackComputer(11);" class="compBox"></td>
+            <td onclick="attackComputer(12);" class="compBox"></td>
+            <td onclick="attackComputer(13);" class="compBox"></td>
+            <td onclick="attackComputer(14);" class="compBox"></td>
+            <td onclick="attackComputer(15);" class="compBox"></td>
+            <td onclick="attackComputer(16);" class="compBox"></td>
+            <td onclick="attackComputer(17);" class="compBox"></td>
+            <td onclick="attackComputer(18);" class="compBox"></td>
+            <td onclick="attackComputer(19);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>3</td>
+            <td onclick="attackComputer(20);" class="compBox"></td>
+            <td onclick="attackComputer(21);" class="compBox"></td>
+            <td onclick="attackComputer(22);" class="compBox"></td>
+            <td onclick="attackComputer(23);" class="compBox"></td>
+            <td onclick="attackComputer(24);" class="compBox"></td>
+            <td onclick="attackComputer(25);" class="compBox"></td>
+            <td onclick="attackComputer(26);" class="compBox"></td>
+            <td onclick="attackComputer(27);" class="compBox"></td>
+            <td onclick="attackComputer(28);" class="compBox"></td>
+            <td onclick="attackComputer(29);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>4</td>
+            <td onclick="attackComputer(30);" class="compBox"></td>
+            <td onclick="attackComputer(31);" class="compBox"></td>
+            <td onclick="attackComputer(32);" class="compBox"></td>
+            <td onclick="attackComputer(33);" class="compBox"></td>
+            <td onclick="attackComputer(34);" class="compBox"></td>
+            <td onclick="attackComputer(35);" class="compBox"></td>
+            <td onclick="attackComputer(36);" class="compBox"></td>
+            <td onclick="attackComputer(37);" class="compBox"></td>
+            <td onclick="attackComputer(38);" class="compBox"></td>
+            <td onclick="attackComputer(39);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>5</td>
+            <td onclick="attackComputer(40);" class="compBox"></td>
+            <td onclick="attackComputer(41);" class="compBox"></td>
+            <td onclick="attackComputer(42);" class="compBox"></td>
+            <td onclick="attackComputer(43);" class="compBox"></td>
+            <td onclick="attackComputer(44);" class="compBox"></td>
+            <td onclick="attackComputer(45);" class="compBox"></td>
+            <td onclick="attackComputer(46);" class="compBox"></td>
+            <td onclick="attackComputer(47);" class="compBox"></td>
+            <td onclick="attackComputer(48);" class="compBox"></td>
+            <td onclick="attackComputer(49);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>6</td>
+            <td onclick="attackComputer(50);" class="compBox"></td>
+            <td onclick="attackComputer(51);" class="compBox"></td>
+            <td onclick="attackComputer(52);" class="compBox"></td>
+            <td onclick="attackComputer(53);" class="compBox"></td>
+            <td onclick="attackComputer(54);" class="compBox"></td>
+            <td onclick="attackComputer(55);" class="compBox"></td>
+            <td onclick="attackComputer(56);" class="compBox"></td>
+            <td onclick="attackComputer(57);" class="compBox"></td>
+            <td onclick="attackComputer(58);" class="compBox"></td>
+            <td onclick="attackComputer(59);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>7</td>
+            <td onclick="attackComputer(60);" class="compBox"></td>
+            <td onclick="attackComputer(61);" class="compBox"></td>
+            <td onclick="attackComputer(62);" class="compBox"></td>
+            <td onclick="attackComputer(63);" class="compBox"></td>
+            <td onclick="attackComputer(64);" class="compBox"></td>
+            <td onclick="attackComputer(65);" class="compBox"></td>
+            <td onclick="attackComputer(66);" class="compBox"></td>
+            <td onclick="attackComputer(67);" class="compBox"></td>
+            <td onclick="attackComputer(68);" class="compBox"></td>
+            <td onclick="attackComputer(69);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>8</td>
+            <td onclick="attackComputer(70);" class="compBox"></td>
+            <td onclick="attackComputer(71);" class="compBox"></td>
+            <td onclick="attackComputer(72);" class="compBox"></td>
+            <td onclick="attackComputer(73);" class="compBox"></td>
+            <td onclick="attackComputer(74);" class="compBox"></td>
+            <td onclick="attackComputer(75);" class="compBox"></td>
+            <td onclick="attackComputer(76);" class="compBox"></td>
+            <td onclick="attackComputer(77);" class="compBox"></td>
+            <td onclick="attackComputer(78);" class="compBox"></td>
+            <td onclick="attackComputer(79);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>9</td>
+            <td onclick="attackComputer(80);" class="compBox"></td>
+            <td onclick="attackComputer(81);" class="compBox"></td>
+            <td onclick="attackComputer(82);" class="compBox"></td>
+            <td onclick="attackComputer(83);" class="compBox"></td>
+            <td onclick="attackComputer(84);" class="compBox"></td>
+            <td onclick="attackComputer(85);" class="compBox"></td>
+            <td onclick="attackComputer(86);" class="compBox"></td>
+            <td onclick="attackComputer(87);" class="compBox"></td>
+            <td onclick="attackComputer(88);" class="compBox"></td>
+            <td onclick="attackComputer(89);" class="compBox"></td>
+        </tr>
+        <tr>
+            <td>10</td>
+            <td onclick="attackComputer(90);" class="compBox"></td>
+            <td onclick="attackComputer(91);" class="compBox"></td>
+            <td onclick="attackComputer(92);" class="compBox"></td>
+            <td onclick="attackComputer(93);" class="compBox"></td>
+            <td onclick="attackComputer(94);" class="compBox"></td>
+            <td onclick="attackComputer(95);" class="compBox"></td>
+            <td onclick="attackComputer(96);" class="compBox"></td>
+            <td onclick="attackComputer(97);" class="compBox"></td>
+            <td onclick="attackComputer(98);" class="compBox"></td>
+            <td onclick="attackComputer(99);" class="compBox"></td>
+        </tr>
+    </table> <br />
+    <img id="lengthFive" ondblclick="changeOrientation('lengthFive', 'lengthFive');" class="shipImg"
+        src="lengthFive.png" style="width: 11.25vw" />
+    <img id="lengthFour" ondblclick="changeOrientation('lengthFour', 'lengthFour');" class="shipImg"
+        src="lengthFour.png" style="width: 9vw" />
+    <img id="lengthThreeOne" ondblclick="changeOrientation('lengthThreeOne', 'lengthThree');" class="shipImg"
+        src="lengthThree.png" />
+    <img id="lengthThreeTwo" ondblclick="changeOrientation('lengthThreeTwo', 'lengthThree');" class="shipImg"
+        src="lengthThree.png" />
+    <img id="lengthTwo" ondblclick="changeOrientation('lengthTwo', 'lengthTwo');" class="shipImg" src="lengthTwo.png" />
+    <button id="submitSetup" onclick="startGame();">Start</button>
+    <div id="sinkLogDiv">
+        <span class="sinkLog" id="compCarrier">Computer Carrier (5 blocks): Afloat</span><br /><br />
+        <span class="sinkLog" id="compBattleShip">Computer Battleship (4 blocks): Afloat</span><br /><br />
+        <span class="sinkLog" id="compSubmarine">Computer Submarine (3 blocks): Afloat</span><br /><br />
+        <span class="sinkLog" id="compDestroyer">Computer Destroyer (3 blocks): Afloat</span><br /><br />
+        <span class="sinkLog" id="compPatrolBoat">Computer Patrol Boat (2 blocks): Afloat</span>
+    </div>
+</body>
+
+</html>
